@@ -9,7 +9,7 @@ import matplotlib.image as mpimg
 import data_augmentation as DA
 from multi_layers_perceptrons import MLP
 
-PERCENTAGE_OF_AUGMENTED_DATA = 0.3
+PERCENTAGE_OF_AUGMENTED_DATA = 0.1
 
 
 def load_data(dataset):
@@ -64,9 +64,10 @@ def load_data(dataset):
     # the number of rows in the input. It should give the target
     # to the example with the same index in the input.
 
-    data_augmentation(train_set[0], train_set[1])
+    print("Before data augmentation, training set's shape is : ", train_set[0].shape)
+    train_set = data_augmentation(train_set[0], train_set[1])
+    print("After data augmentation, training set's shape is : ", train_set[0].shape)
 
-    return None
     def shared_dataset(data_xy, borrow=True):
         """ Function that loads the dataset into shared variables
 
@@ -108,11 +109,11 @@ def data_augmentation(input_set, target):
     np.random.shuffle(index_map)
     # Convert 2D matrix into 3D matrix (sampes x row  x col)
     matrix_set = [DA.vector2matrix(i, (28,28)) for i in input_set[index_map]]
-    original_target = target[index_map]
-    # rotated_images = [DA.matrix2vector(DA.random_rotation(i, max_variation=30)) for i in matrix_set]
-    # translated_images = [DA.matrix2vector(DA.random_translation(i, max_variation=5)) for i in matrix_set]
-    # sheared_images = [DA.matrix2vector(DA.random_shear(i, max_variation=30)) for i in matrix_set]
-    distorded_images = [DA.matrix2vector(DA.elastic_distortion(i, sigma=2, alpha=8)) for i in matrix_set]
+    DA_target = target[index_map]
+    rotated_images = np.asarray([DA.matrix2vector(DA.random_rotation(i, max_variation=30)) for i in matrix_set])
+    translated_images = np.asarray([DA.matrix2vector(DA.random_translation(i, max_variation=5)) for i in matrix_set])
+    sheared_images = np.asarray([DA.matrix2vector(DA.random_shear(i, max_variation=30)) for i in matrix_set])
+    distorded_images = np.asarray([DA.matrix2vector(DA.elastic_distortion(i, sigma=2, alpha=8)) for i in matrix_set])
 
     def plot_images(set_images, set_DA):
         plt.subplot(241);
@@ -142,6 +143,9 @@ def data_augmentation(input_set, target):
         plt.show()
 
     plot_images(matrix_set, distorded_images)
+
+    return np.concatenate((input_set, rotated_images, translated_images, sheared_images, distorded_images)), \
+           np.concatenate((target, DA_target, DA_target, DA_target, DA_target))
 
 
 def construct_multilayer_model(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
@@ -188,7 +192,6 @@ def construct_multilayer_model(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n
     # BUILD ACTUAL MODEL #
     ######################
     print('... building the model')
-    print(train_set_y)
     # allocate symbolic variables for the data
     index = T.lscalar()  # index to a [mini]batch
     x = T.matrix('x')  # the data is presented as rasterized images

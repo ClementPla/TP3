@@ -118,9 +118,6 @@ class LogisticRegression(object):
             )
         # check if y is of the correct datatype
         if y.dtype.startswith('int'):
-            print(self.y_pred)
-            print('here')
-            print(y)
             # the T.neq operator returns a vector of 0s and 1s, where 1
             # represents a mistake in prediction
             return T.mean(T.neq(self.y_pred, y))
